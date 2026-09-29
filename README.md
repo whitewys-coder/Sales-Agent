@@ -52,3 +52,7 @@ python import_csv.py data/leads.csv
 ## OpenAI Work 销售工作流
 
 新增 [Work V1.2 配置与使用说明](workflows/openai-work/README.md)：每日销售研究、邮件状态同步、集团去重、评分、待审批草稿及持久台账。该流程在 ChatGPT Work 中运行，与本仓库飞书 MVP 独立；上传配置不会自动部署或连接飞书。
+
+## 五 Agent 独立产品
+
+新增 [Agate Sales Agent 独立运行版](sales-agent-product/README.md)：五个Agent模块、Web工作台、SQLite、人工审批、IMAP/SMTP、每日调度及Docker部署。目录可单独运行；默认演示模式，真实模式需配置自己的OpenAI API和邮箱凭证。与飞书MVP及Work任务独立。
