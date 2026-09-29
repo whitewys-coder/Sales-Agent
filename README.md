@@ -48,3 +48,7 @@ python import_csv.py data/leads.csv
 - 目前事件校验采用飞书 verification token；生产部署前应按飞书平台要求启用并验证请求签名/加密配置。
 - `/today` 展示的是已录入数据库的线索，不代表系统已自动完成每日扫描。
 - 人工反馈会被记录，但当前不会自动训练或调整评分模型。
+
+## OpenAI Work 销售工作流
+
+新增 [Work V1.2 配置与使用说明](workflows/openai-work/README.md)：每日销售研究、邮件状态同步、集团去重、评分、待审批草稿及持久台账。该流程在 ChatGPT Work 中运行，与本仓库飞书 MVP 独立；上传配置不会自动部署或连接飞书。

@@ -4,3 +4,8 @@ __pycache__/
 *.py[cod]
 data/*.sqlite3
 !data/leads.example.csv
+
+# Private Work runtime data
+workflows/openai-work/*.local.*
+workflows/openai-work/private/
+workflows/openai-work/runtime/

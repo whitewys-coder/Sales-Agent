@@ -1,0 +1,26 @@
+{
+  "version": "1.2",
+  "runtime": "ChatGPT Work",
+  "title": "Xeroptix 销售研究与邮件跟进",
+  "default_timezone": "Asia/Shanghai",
+  "timing_mode": "exact_schedule",
+  "schedule": "BEGIN:VEVENT\nDTSTART;TZID=Asia/Shanghai:{{NEXT_RUN_LOCAL_YYYYMMDD}}T090000\nRRULE:FREQ=DAILY;BYHOUR=9;BYMINUTE=0;BYSECOND=0\nEND:VEVENT",
+  "prompt_file": "prompt.md",
+  "bindings": {
+    "SENDER_NAME": "REPLACE_ME",
+    "SENDER_EMAIL": "REPLACE_ME",
+    "LEDGER_FILE_ID": "REPLACE_ME"
+  },
+  "required_capabilities": [
+    "web_search",
+    "gmail_read",
+    "gmail_drafts",
+    "library_read_write",
+    "automations"
+  ],
+  "mail_policy": {
+    "automatic_send": false,
+    "approval_required": true
+  },
+  "note": "Declarative template; not an official import schema or GitHub Actions workflow. Resolve placeholders and configure through Work."
+}
