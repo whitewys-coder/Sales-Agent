@@ -28,6 +28,10 @@ def complete(engine, account, person, employment_evidence, retrieved_urls, copy,
              linkedin_url=person['linkedinUrl'],current_verification=v)
     a['research_backend']='native_reviewed'
     a['score_evidence']=account.get('score_evidence',{})
+    # Persist approved research and copy BEFORE the external request. A restart
+    # can reuse the cached response without losing the work that justified it.
+    a['reviewed_copy']={'subject':subject,'body':body}
+    a['reviewed_urls']=sorted(set(retrieved_urls))
     engine.db.put('accounts',dict(a,status='needs_contact'))
     # Use the SAME budget ledger and cached paid client as standalone execution.
     result=engine.lc.email(person['linkedinUrl'])

@@ -91,3 +91,15 @@ python3 -m unittest discover -s tests -v
 桥接函数要求`evidence_reviewed=True`、实际检索URL、结构化企业资料和现任证据；它重新执行企业门槛、历史去重、现任校验，再用同一LeadContact预算客户端查询邮箱、评分和保存人工发送草稿。调用方对实际阅读来源、业务假设及文案真实性负责。它不是把任意JSON当作自动核实结果的公共端点。
 
 native模式必须有可访问同一文件/数据库环境的Work任务持续接力；没有接力时只停留在队列，不会独立完成整轮。当前实例禁用第二套本地定时器，沿用既有Work日任务，避免两套调度同时扣费。腾讯独立部署时可选择OpenAI后端，或另行实现经过验证的研究服务接力。
+
+## 中断恢复（当前Work运行方式）
+
+Work为唯一09:00调度，本地SCHEDULE_ENABLED=false。每轮先执行只读恢复检查：
+
+```bash
+python -m sales_agent.recovery --database /absolute/private/live.sqlite3 --backup /absolute/private/checkpoints/latest.sqlite3
+```
+
+命令不联网、不扣积分，不会创建缺失原账本。SQLite在线备份包含已提交WAL事务，权限0600。先续pending_companies，再复核unresolved_reviews；空队列不等于准入或写回完成。unknown/reserved请求禁止自动重试。逐家公司结论、队列和运行计数同事务提交；付费前保存reviewed_copy与核验来源。
+
+本地备份受会话生命周期影响，每轮还需持久保存客户主库、台账及私有恢复包。私有备份不提交GitHub。重建环境后凭据或账本缺失则停止付费，不创建空库继续。当前方案不保证24小时托管。
