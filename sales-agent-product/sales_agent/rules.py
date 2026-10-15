@@ -1,7 +1,8 @@
 """V3.3 deterministic gates; external assertions never imply delivery or demand."""
 import re
 import unicodedata
-from datetime import date
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
 from urllib.parse import urlsplit, unquote
 
 EU = {'Germany','France','Italy','Spain','Netherlands','Belgium','Switzerland','Austria','Czechia','Hungary'}
@@ -19,7 +20,7 @@ def person_key(url):
 
 def verify_current(person, evidence, retrieved, today=None, company_domain=None):
     """Require separate evidence; retain API conflicts instead of rejecting automatically."""
-    today=today or date.today()
+    today=today or datetime.now(ZoneInfo('Asia/Shanghai')).date()
     def authentic(x):
         host=(urlsplit(x.get('url','')).hostname or '').lower().removeprefix('www.')
         if x.get('kind')=='personal_profile':return person_key(x.get('url',''))==person_key(person.get('linkedinUrl','')) and bool(person_key(x.get('url','')))
