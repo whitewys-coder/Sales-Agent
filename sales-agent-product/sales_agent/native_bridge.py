@@ -10,6 +10,8 @@ from .store import now,uid
 
 def complete(engine, account, person, employment_evidence, retrieved_urls, copy, evidence_reviewed=False):
     if evidence_reviewed is not True:raise ValueError('Explicit evidence review required')
+    subject,body=copy.get('subject','').strip(),copy.get('body','').strip()
+    if not subject or not body or '\n' in subject or '\r' in subject:raise ValueError('Subject and body required before any paid lookup')
     a=evidence_gate(dict(account),set(retrieved_urls))
     a.update(id=account.get('id') or uid(),updated_at=now(),demo=False)
     if not research_eligible(a):raise ValueError('Company research gate failed')
@@ -17,7 +19,7 @@ def complete(engine, account, person, employment_evidence, retrieved_urls, copy,
     if any(c.get('domain') in keys or norm(c.get('company'))==norm(a['company']) for c in engine.db.all('contacts')):
         raise ValueError('Historical contact/group suppression')
     existing=next((x for x in engine.db.all('accounts') if x.get('domain')==a['domain']),None)
-    if existing and existing.get('status')=='needs_contact':a['id']=existing['id']
+    if existing and existing.get('status') in ('needs_contact','pending_review') and not any(d.get('account_id')==existing['id'] for d in engine.db.all('drafts')):a['id']=existing['id']
     elif engine.known(a):raise ValueError('Known account/group; do not repeat first contact')
     v=verify_current(person,employment_evidence,set(retrieved_urls),company_domain=a['domain'])
     if not v['verified']:raise ValueError('Current employment requires second verification')
@@ -39,8 +41,6 @@ def complete(engine, account, person, employment_evidence, retrieved_urls, copy,
     ScoringAgent().run(a);engine.db.put('accounts',a)
     if not a['validated']:return {'status':'needs_contact','account_id':a['id']}
     if any(d.get('account_id')==a['id'] for d in engine.db.all('drafts')):raise ValueError('Draft already exists')
-    subject,body=copy.get('subject','').strip(),copy.get('body','').strip()
-    if not subject or not body or '\n' in subject or '\r' in subject:raise ValueError('Subject and body required')
     draft={'id':uid(),'account_id':a['id'],'to':a['email'],'subject':subject,'body':body+'\n\nBest regards,\nAlen Wang\nXeroptix\nAlenWang@xeroptix.com\nhttps://xeroptix.com',
            'status':'pending','created_at':now(),'approved_hash':'','demo':False,'research_backend':'native_reviewed'}
     engine.db.put('drafts',draft)
