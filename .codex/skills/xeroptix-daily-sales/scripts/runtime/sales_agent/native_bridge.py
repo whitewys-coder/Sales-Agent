@@ -7,6 +7,7 @@ from .agents.validation import evidence_gate
 from .agents.scoring import ScoringAgent
 from .rules import verify_current,research_eligible,email_eligible,norm
 from .store import now,uid
+from .research_queue import checkpoint
 
 def complete(engine, account, person, employment_evidence, retrieved_urls, copy, evidence_reviewed=False):
     if evidence_reviewed is not True:raise ValueError('Explicit evidence review required')
@@ -33,6 +34,8 @@ def complete(engine, account, person, employment_evidence, retrieved_urls, copy,
     chosen=next((s for s in result.get('sources',[]) if s.get('valid') is True and s.get('personal') is False and s.get('email','').split('@')[-1].lower() in (a['domain'],a['group_domain'])),None)
     if not chosen:
         a.update(status='needs_contact',enrichment_issues=['No suitable business email']);engine.db.put('accounts',a)
+        checkpoint(engine.db, account.get('discovered_company', account['company']),
+                   'needs_contact', 'Reviewed company/current role; API returned no suitable business email', retrieved_urls, a['id'])
         return {'status':'needs_contact','account_id':a['id']}
     a.update(email=chosen['email'].lower(),email_verified=True,email_valid=True,email_personal=False,email_domain_match=True,email_business_use=True,email_checked_at=now())
     u='https://api.leadcontact.ai/api/rest/email/query'
@@ -44,5 +47,8 @@ def complete(engine, account, person, employment_evidence, retrieved_urls, copy,
     draft={'id':uid(),'account_id':a['id'],'to':a['email'],'subject':subject,'body':body+'\n\nBest regards,\nAlen Wang\nXeroptix\nAlenWang@xeroptix.com\nhttps://xeroptix.com',
            'status':'pending','created_at':now(),'approved_hash':'','demo':False,'research_backend':'native_reviewed'}
     engine.db.put('drafts',draft)
+    checkpoint(engine.db, account.get('discovered_company', account['company']),
+               'draft_ready', 'Reviewed company, current role and suitable business email; manual sending only',
+               retrieved_urls, a['id'])
     engine.db.event('Native Research Bridge','completed','Reviewed research, current-employment check, budgeted email lookup and draft saved; manual sending only')
     return {'status':'pending','account_id':a['id'],'draft_id':draft['id'],'score':a['score'],'channel':a['channel'],'to':a['email']}

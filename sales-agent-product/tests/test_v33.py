@@ -17,6 +17,8 @@ class V33Tests(unittest.TestCase):
   e={'name':p['fullName'],'company':p['companyName'],'title':'Responsable Qualité','current':True,'kind':'official_contact','url':'https://example-works.test/team','checked_date':date.today().isoformat()}
   self.assertFalse(verify_current(p,[],set())['verified'])
   result=verify_current(p,[e],{e['url']});self.assertTrue(result['verified']);self.assertTrue(result['api_conflict'])
+  p['experience'].append({'companyName':'EXAMPLE WORKS','isCurrent':True})
+  self.assertFalse(verify_current(p,[e],{e['url']})['api_conflict'])
   self.assertFalse(verify_current(p,[dict(e,current=False),e],{e['url']})['verified'])
  def test_unretrieved_employment_and_similar_name_rejected(self):
   p={'fullName':'Same Name','companyName':'Factory'}
@@ -63,6 +65,21 @@ class V33Tests(unittest.TestCase):
    def search(self,p):return {'employees':[{'fullName':'Example Person','companyName':'Factory'}]}
   e=Engine(self.c,provider=object(),leadcontact=LC());e.db.put('settings',{'id':'search_payload','value':{'location':['France']}})
   r=e.run();self.assertEqual(r['status'],'awaiting_native_research');self.assertTrue(e.state()['configured']);self.assertEqual(len(e.db.get('settings','native_research_queue')['value']),1)
+ def test_native_resume_does_not_repeat_discovery_and_review_is_checkpointed(self):
+  from sales_agent.research_queue import checkpoint
+  self.c.research_backend='native'
+  class LC:
+   calls=0
+   def search(self,p):
+    self.calls+=1
+    return {'employees':[{'companyName':'Factory'}]}
+  lc=LC();e=Engine(self.c,provider=object(),leadcontact=lc)
+  e.db.put('settings',{'id':'search_payload','value':{'location':['France']}})
+  first=e.run();e.run();self.assertEqual(lc.calls,1)
+  self.assertTrue(checkpoint(e.db,'Factory','needs_verification','No verified current role',['https://factory.example']))
+  self.assertFalse(checkpoint(e.db,'Factory','needs_verification','Same review',['https://factory.example']))
+  self.assertEqual(e.db.get('runs',first['id'])['status'],'research_reviewed')
+  self.assertEqual(e.db.get('runs',first['id'])['new_drafts'],0)
  def test_native_bridge_real_stages_without_model_api(self):
   from sales_agent.native_bridge import complete
   self.c.research_backend='native';self.c.api_key='';self.c.model=''

@@ -1,7 +1,8 @@
 import hashlib
 import json
 import threading
-from datetime import date
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
 from pathlib import Path
 from .config import Config
 from .store import Store, now, uid
@@ -76,6 +77,12 @@ class Engine:
             if self.c.mode == 'demo':
                 self.demo(run)
             else:
+                if self.c.research_backend == 'native':
+                    queued = self.db.get('settings', 'native_research_queue')
+                    if queued and queued.get('value'):
+                        run.update(status='awaiting_native_research', resumed_run_id=queued.get('run_id'),
+                                   pending_companies=len(queued['value']))
+                        return run
                 if self.c.mail_sync_enabled:
                     self.stage(self.followup.name, run['id'], self.followup.run)
                 else:
@@ -91,7 +98,9 @@ class Engine:
                 run['returned_people']=len(result.get('employees',[]))
                 run['discovered_companies']=len(companies)
                 if self.c.research_backend=='native':
-                    queue=[x for x in companies.values() if not any(norm(c.get('company'))==norm(x['company']) for c in self.db.all('contacts')) and not any(norm(a.get('discovered_company',a.get('company')))==norm(x['company']) and a.get('status')!='needs_contact' for a in self.db.all('accounts'))]
+                    day=datetime.now(ZoneInfo(self.c.timezone)).date().isoformat()
+                    reviewed={norm(x.get('company')) for x in self.db.all('settings') if x['id'].startswith('research_outcome:') and x.get('reviewed_at','')[:10]==day}
+                    queue=[x for x in companies.values() if norm(x['company']) not in reviewed and not any(norm(c.get('company'))==norm(x['company']) for c in self.db.all('contacts')) and not any(norm(a.get('discovered_company',a.get('company')))==norm(x['company']) and a.get('status')!='needs_contact' for a in self.db.all('accounts'))]
                     self.db.put('settings',{'id':'native_research_queue','value':queue,'run_id':run['id'],'created_at':now(), 'note':'Discovery only; awaiting current ChatGPT Work research and reviewed bridge completion'})
                     run['status']='awaiting_native_research'
                     return run

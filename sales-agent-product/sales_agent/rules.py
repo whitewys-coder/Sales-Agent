@@ -31,7 +31,8 @@ def verify_current(person, evidence, retrieved, today=None, company_domain=None)
              and x.get('title') and x.get('kind') in ('official_contact','official_appointment','personal_profile')
              and x.get('checked_date')==today.isoformat()]
     api_flags=[x.get('isCurrent') for x in person.get('experience',[]) if norm(x.get('companyName'))==norm(person.get('companyName'))]
-    conflicts=any(x is False for x in api_flags)
+    # A past role at the same employer is normal when another role is current.
+    conflicts=any(x is False for x in api_flags) and not any(x is True for x in api_flags)
     explicit_exit=any(x.get('url') in retrieved and authentic(x) and x.get('current') is False
                       and norm(x.get('name'))==norm(person.get('fullName'))
                       and norm(x.get('company'))==norm(person.get('companyName')) for x in evidence)

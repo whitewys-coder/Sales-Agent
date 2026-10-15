@@ -1,6 +1,7 @@
 import json
 import re
-from datetime import date
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
 from urllib.parse import urlparse
 from ..provider import obj,array,TEXT,BOOL,NUMBER
 from ..rules import EU,SEA
@@ -20,7 +21,7 @@ def domain(value):
 def address(value):return bool(re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+',value))
 
 def evidence_gate(a,retrieved_urls,today=None):
-    today=today or date.today();problems=[]
+    today=today or datetime.now(ZoneInfo('Asia/Shanghai')).date();problems=[]
     a['domain']=domain(a.get('domain',''));a['group_domain']=domain(a.get('group_domain','')) or a['domain']
     sources=[s for s in a.get('sources',[]) if s.get('url') in retrieved_urls and urlparse(s['url']).scheme=='https']
     official=[s for s in sources if domain(s['url']) in (a['domain'],a['group_domain']) and s.get('kind') in ('company','product','scene','official_trigger')]
