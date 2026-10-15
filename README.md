@@ -55,4 +55,4 @@ python import_csv.py data/leads.csv
 
 ## 五 Agent 独立产品
 
-新增 [Agate Sales Agent 独立运行版](sales-agent-product/README.md)：五个Agent模块、Web工作台、SQLite、人工审批、IMAP/SMTP、每日调度及Docker部署。目录可单独运行；默认演示模式，真实模式需配置自己的OpenAI API和邮箱凭证。与飞书MVP及Work任务独立。
+新增 [Agate Sales Agent 独立运行版](sales-agent-product/README.md)：V3.3 LeadContact公司发现、企业研究、现任核验、邮箱补充、评分及开发信，Web工作台、SQLite和每日调度。邮件仅人工发送，程序代发已关闭。目录可单独运行；默认演示模式，真实模式需配置自己的OpenAI API和邮箱凭证。与飞书MVP及Work任务独立。

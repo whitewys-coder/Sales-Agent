@@ -20,7 +20,12 @@ class Config:
     api_key: str = ''
     model: str = ''
     sender: str = ''
-    sender_name: str = 'Sales Team'
+    sender_name: str = 'Alen Wang'
+    research_backend: str = 'openai'
+    leadcontact_token: str = ''
+    credit_hard_limit: int = 200
+    credit_plan: int = 100
+    mail_sync_enabled: bool = False
     imap_host: str = 'imap.gmail.com'
     smtp_host: str = 'smtp.gmail.com'
     mail_user: str = ''
@@ -41,7 +46,10 @@ class Config:
         c = cls(mode=os.getenv('APP_MODE', 'demo'), data_dir=os.getenv('DATA_DIR', 'data'),
                 token=os.getenv('APP_TOKEN', ''), api_key=os.getenv('OPENAI_API_KEY', ''),
                 model=os.getenv('OPENAI_MODEL', ''), sender=os.getenv('SENDER_EMAIL', ''),
-                sender_name=os.getenv('SENDER_NAME', 'Sales Team'),
+                sender_name=os.getenv('SENDER_NAME', 'Alen Wang'),
+                leadcontact_token=os.getenv('LEADCONTACT_TOKEN', ''),
+                research_backend=os.getenv('RESEARCH_BACKEND','openai'),
+                mail_sync_enabled=os.getenv('MAIL_SYNC_ENABLED','false').lower()=='true',
                 imap_host=os.getenv('IMAP_HOST', 'imap.gmail.com'),
                 smtp_host=os.getenv('SMTP_HOST', 'smtp.gmail.com'),
                 mail_user=os.getenv('MAIL_USER', ''), mail_password=os.getenv('MAIL_PASSWORD', ''),
@@ -62,6 +70,7 @@ class Config:
         return c
 
     def check_live(self):
-        if self.mode == 'live' and not all((self.api_key, self.model, self.sender,
-                                           self.mail_user, self.mail_password)):
-            raise ValueError('Live mode requires OpenAI model/key and email connection settings')
+        if self.research_backend not in ('openai','native'):
+            raise ValueError('RESEARCH_BACKEND must be openai or native')
+        if self.mode == 'live' and (not self.leadcontact_token or self.research_backend=='openai' and not (self.api_key and self.model)):
+            raise ValueError('Live requires LeadContact token; standalone OpenAI backend also requires model/key. Native backend requires ChatGPT Work research bridge.')

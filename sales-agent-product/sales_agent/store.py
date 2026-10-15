@@ -15,7 +15,7 @@ def uid():
 
 
 class Store:
-    TABLES = {'accounts', 'drafts', 'runs', 'events', 'messages', 'contacts', 'settings'}
+    TABLES = {'accounts', 'drafts', 'runs', 'events', 'messages', 'contacts', 'settings', 'api_calls'}
 
     def __init__(self, path):
         Path(path).parent.mkdir(parents=True, exist_ok=True)

@@ -99,6 +99,16 @@ def serve(config):
                     scope = engine.db.get('settings', 'scope') or {'value': DEFAULT_SCOPE}
                     threading.Thread(target=engine.run, args=(scope['value'],), daemon=True).start()
                     return self.respond(202, {'status': 'started'})
+                if self.path == '/api/search-config':
+                    from .rules import EU, SEA
+                    payload=data.get('payload',{})
+                    if len(payload.get('location',[]))!=1 or payload['location'][0] not in EU|SEA or payload.get('nextPageToken'):
+                        raise ValueError('Single allowed country, no pagination')
+                    allowed={'currentTitlesOnly','includeRelatedJobTitles','industry','companySize','location','jobTitle','company','seniority'}
+                    if set(payload)-allowed or payload.get('currentTitlesOnly') is not True:
+                        raise ValueError('Unsupported parameter or currentTitlesOnly not true')
+                    engine.db.put('settings',{'id':'search_payload','value':payload})
+                    return self.respond(200,{'status':'saved'})
                 if self.path == '/api/scope':
                     value = str(data['scope']).strip()
                     if not 10 <= len(value) <= 4000:
@@ -110,7 +120,9 @@ def serve(config):
                 elif self.path == '/api/drafts/approve':
                     value = engine.approve(data['id'], data['hash'], data.get('evidence_reviewed') is True)
                 elif self.path == '/api/drafts/send':
-                    value = engine.send(data['id'])
+                    return self.respond(403, {'error':'Manual sending only; SMTP sending disabled'})
+                elif self.path == '/api/drafts/report-sent':
+                    value = engine.report_sent(data['id'], str(data.get('evidence','')), data.get('type','sent'))
                 elif self.path == '/api/feedback':
                     if not isinstance(data.get('valid'), bool):
                         raise ValueError('valid must be boolean')
