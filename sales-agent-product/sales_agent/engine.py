@@ -106,7 +106,10 @@ class Engine:
                     return run
                 # Resume saved company work before new research; never discard facts after transient failures.
                 pending=[x for x in self.db.all('accounts') if x.get('status')=='needs_contact']
-                for candidate in list(companies.values())[:self.c.max_accounts]:
+                candidates=list(companies.values())
+                if self.c.max_accounts:
+                    candidates=candidates[:self.c.max_accounts]
+                for candidate in candidates:
                     existing=next((x for x in self.db.all('accounts') if norm(x.get('discovered_company',x.get('company')))==norm(candidate['company'])),None)
                     if existing or any(norm(c.get('company'))==norm(candidate['company']) for c in self.db.all('contacts')):continue
                     a=self.stage(self.validation.name,run['id'],lambda:self.validation.run(candidate,scope))

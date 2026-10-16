@@ -10,6 +10,17 @@ SEA = {'Singapore','Malaysia','Thailand','Vietnam','Indonesia','Philippines'}
 CAPS = {'trigger':25,'technical_fit':25,'freshness':15,'decision_maker':15,'public_email':10,'size':5,'strategic':5}
 SUBCAPS = {'technical_fit': [10,10,5], 'decision_maker':[4,4,3,2,2], 'public_email':[3,3,2,2], 'strategic':[2,2,1]}
 FREEMAIL = {'gmail.com','qq.com','outlook.com','hotmail.com','yahoo.com','163.com','foxmail.com','web.de'}
+ROLE_MAILBOX = {'info','contact','contacts','sales','commercial','office','hello','support',
+                'service','admin','courrier','enquiry','enquiries','inquiry','inquiries',
+                'marketing','purchasing','quality','production','reception','general'}
+
+def named_corporate_email(email):
+    """Reject shared department addresses; profile/owner verification is separate."""
+    email=(email or '').strip().lower()
+    if not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+',email):return False
+    local,host=email.rsplit('@',1)
+    parts=set(re.split(r'[._+\-]',local))
+    return host not in FREEMAIL and not parts & ROLE_MAILBOX
 
 def norm(s):
     return ' '.join(''.join(c for c in unicodedata.normalize('NFKD', s or '') if not unicodedata.combining(c)).casefold().split())
@@ -46,6 +57,6 @@ def research_eligible(a):
 
 def email_eligible(a):
     e=a.get('email','').strip().lower()
-    return bool(re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+',e) and e.split('@')[-1] not in FREEMAIL
+    return bool(named_corporate_email(e) and a.get('contact_verified')
                 and a.get('email_verified') and a.get('email_valid') is True and a.get('email_personal') is False
                 and a.get('email_domain_match') is True and a.get('email_business_use') is True)

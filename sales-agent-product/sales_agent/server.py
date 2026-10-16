@@ -102,7 +102,7 @@ def serve(config):
                 if self.path == '/api/search-config':
                     from .rules import EU, SEA
                     payload=data.get('payload',{})
-                    if len(payload.get('location',[]))!=1 or payload['location'][0] not in EU|SEA or payload.get('nextPageToken'):
+                    if len(payload.get('location',[]))!=1 or payload['location'][0] not in EU|SEA:
                         raise ValueError('Single allowed country, no pagination')
                     allowed={'currentTitlesOnly','includeRelatedJobTitles','industry','companySize','location','jobTitle','company','seniority'}
                     if set(payload)-allowed or payload.get('currentTitlesOnly') is not True:

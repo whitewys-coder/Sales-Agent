@@ -33,7 +33,7 @@ class Config:
     sent_folder: str = '[Gmail]/Sent Mail'
     inbox_folder: str = 'INBOX'
     mail_limit: int = 1000
-    max_accounts: int = 5
+    max_accounts: int = 0
     timezone: str = 'Asia/Shanghai'
     schedule_hour: int = 9
     schedule_enabled: bool = False
@@ -56,7 +56,7 @@ class Config:
                 sent_folder=os.getenv('IMAP_SENT_FOLDER', '[Gmail]/Sent Mail'),
                 inbox_folder=os.getenv('IMAP_INBOX_FOLDER', 'INBOX'),
                 mail_limit=int(os.getenv('MAIL_SCAN_LIMIT', '1000')),
-                max_accounts=int(os.getenv('MAX_ACCOUNTS', '5')),
+                max_accounts=int(os.getenv('MAX_ACCOUNTS', '0')),
                 timezone=os.getenv('APP_TIMEZONE', 'Asia/Shanghai'),
                 schedule_hour=int(os.getenv('SCHEDULE_HOUR', '9')),
                 schedule_enabled=os.getenv('SCHEDULE_ENABLED', 'false').lower() == 'true',
@@ -65,8 +65,8 @@ class Config:
             raise ValueError('APP_MODE must be demo or live')
         if len(c.token) < 24 or c.token.startswith('REPLACE_'):
             raise ValueError('Set APP_TOKEN to a random value of at least 24 characters')
-        if not 1 <= c.max_accounts <= 10 or not 0 <= c.schedule_hour <= 23:
-            raise ValueError('MAX_ACCOUNTS=1..10; SCHEDULE_HOUR=0..23')
+        if c.max_accounts < 0 or not 0 <= c.schedule_hour <= 23:
+            raise ValueError('MAX_ACCOUNTS must be nonnegative (0=no fixed count cap); SCHEDULE_HOUR=0..23')
         return c
 
     def check_live(self):

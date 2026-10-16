@@ -5,7 +5,7 @@ This is an explicit reviewed-data boundary, not an autonomous web researcher.
 """
 from .agents.validation import evidence_gate
 from .agents.scoring import ScoringAgent
-from .rules import verify_current,research_eligible,email_eligible,norm
+from .rules import verify_current,research_eligible,email_eligible,norm,named_corporate_email
 from .store import now,uid
 from .research_queue import checkpoint
 
@@ -28,14 +28,12 @@ def complete(engine, account, person, employment_evidence, retrieved_urls, copy,
              linkedin_url=person['linkedinUrl'],current_verification=v)
     a['research_backend']='native_reviewed'
     a['score_evidence']=account.get('score_evidence',{})
-    # Persist approved research and copy BEFORE the external request. A restart
-    # can reuse the cached response without losing the work that justified it.
     a['reviewed_copy']={'subject':subject,'body':body}
     a['reviewed_urls']=sorted(set(retrieved_urls))
     engine.db.put('accounts',dict(a,status='needs_contact'))
     # Use the SAME budget ledger and cached paid client as standalone execution.
     result=engine.lc.email(person['linkedinUrl'])
-    chosen=next((s for s in result.get('sources',[]) if s.get('valid') is True and s.get('personal') is False and s.get('email','').split('@')[-1].lower() in (a['domain'],a['group_domain'])),None)
+    chosen=next((s for s in result.get('sources',[]) if s.get('valid') is True and s.get('personal') is False and named_corporate_email(s.get('email')) and s.get('email','').split('@')[-1].lower() in (a['domain'],a['group_domain'])),None)
     if not chosen:
         a.update(status='needs_contact',enrichment_issues=['No suitable business email']);engine.db.put('accounts',a)
         checkpoint(engine.db, account.get('discovered_company', account['company']),

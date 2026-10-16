@@ -41,7 +41,8 @@ class LeadContact:
                 if old['status']=='completed': return old['result']
                 raise ValueError('Request already attempted/uncertain; reconcile before retry')
             daily=[x for x in rows if x['day']==day]
-            if kind=='search' and any(x['kind']=='search' for x in daily): raise ValueError('One search page per day')
+            if any(x.get('status')!='completed' for x in daily):
+                raise ValueError('Unresolved paid request; reconcile before further paid work')
             used=sum(x.get('cost',x['reserved']) for x in daily)
             if used+reserve>self.c.credit_hard_limit or before<reserve: raise ValueError('Daily credit hard limit')
             con.execute('INSERT INTO api_calls VALUES (?,?)',(key,json.dumps(record)))
@@ -63,8 +64,11 @@ class LeadContact:
             raise
 
     def search(self, payload):
-        if len(payload.get('location',[]))!=1 or payload.get('nextPageToken') or payload.get('page',1)!=1:
-            raise ValueError('Single country, first page only')
+        if len(payload.get('location',[]))!=1:
+            raise ValueError('Single country search required')
+        # 5 credits per returned person, up to 20 people per known page.
+        # Reserve the worst case until supported smaller-page parameters are verified.
+        # Multiple pages are permitted, subject to the shared daily hard limit.
         return self.paid('search',payload,100)
 
     def email(self,url):
