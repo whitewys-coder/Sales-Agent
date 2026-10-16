@@ -103,8 +103,8 @@ def serve(config):
                     from .rules import EU, SEA
                     payload=data.get('payload',{})
                     if len(payload.get('location',[]))!=1 or payload['location'][0] not in EU|SEA:
-                        raise ValueError('Single allowed country, no pagination')
-                    allowed={'currentTitlesOnly','includeRelatedJobTitles','industry','companySize','location','jobTitle','company','seniority'}
+                        raise ValueError('Single allowed country required')
+                    allowed={'currentTitlesOnly','includeRelatedJobTitles','industry','companySize','location','jobTitle','company','seniority','nextPageToken'}
                     if set(payload)-allowed or payload.get('currentTitlesOnly') is not True:
                         raise ValueError('Unsupported parameter or currentTitlesOnly not true')
                     engine.db.put('settings',{'id':'search_payload','value':payload})
