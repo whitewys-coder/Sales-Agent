@@ -58,3 +58,4 @@ billing assumptions were inferred from inaccessible docs. Before enabling live,
 configure the server secret with native Sites tools, get explicit capped test
 spending authorization, verify current master/history and run that capped test.
 Current real daily history already includes10credits; this port must not reset it.
+\n## Optional one-person capped live test grant\n\nOperator-only MCP_TEST_ALLOWANCE=10, MCP_TEST_BASE_USED=<confirmed current day usage>, MCP_TEST_DAY=<Shanghai date>, MCP_TEST_PROFILE_URL=<exact reviewed profile>. All must match. The live test permits only that email endpoint/profile and ten additional expected credits; no search and no further new request after allowance is reserved/spent. Server-side defaults remain disabled. Provider billing anomalies retain the observed debit and block further work; the service cannot control provider-side pricing.\n

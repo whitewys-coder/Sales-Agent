@@ -1,5 +1,5 @@
 import {type DB,day,rows,get,put,stable,hash,norm,domain,profile} from './store';
-export type Runtime={MCP_PAID_ENABLED?:string,LEADCONTACT_TOKEN?:string};
+export type Runtime={MCP_PAID_ENABLED?:string,LEADCONTACT_TOKEN?:string,MCP_TEST_ALLOWANCE?:string,MCP_TEST_BASE_USED?:string,MCP_TEST_DAY?:string,MCP_TEST_PROFILE_URL?:string};
 type Transport=(path:string,payload?:any)=>Promise<any>;
 const EU=['Germany','France','Spain','Italy','Netherlands','Belgium','Switzerland','Austria','Hungary','Czechia'];
 const SEA=['Singapore','Malaysia','Thailand','Vietnam','Indonesia','Philippines'];
@@ -34,6 +34,12 @@ export class PaidController{
   await this.live();const {all,used}=await this.context();
   if(all.some(x=>x.status!=='completed'))throw Error('Unresolved paid request blocks new paid work');
   const reserved=kind==='search'?100:10;
+  let limit=200;
+  if(this.runtime.MCP_TEST_ALLOWANCE!==undefined){
+   const allowance=Number(this.runtime.MCP_TEST_ALLOWANCE),base=Number(this.runtime.MCP_TEST_BASE_USED);
+   if(this.runtime.MCP_TEST_DAY!==day()||kind!=='email'||!profile(this.runtime.MCP_TEST_PROFILE_URL)||profile(payload.profileUrl)!==profile(this.runtime.MCP_TEST_PROFILE_URL)||!Number.isInteger(allowance)||allowance!==10||!Number.isInteger(base)||base<0||base+allowance>200)throw Error('Test grant invalid, expired or target mismatch; no API request');
+   limit=base+allowance;if(used+reserved>limit)throw Error('Test grant exhausted; no further paid request');
+  }
   if(!Number.isInteger(emailReserve)||emailReserve<0||used+reserved+emailReserve>200)throw Error('Daily hard budget including protected email reserve exceeded');
   const io=this.transport||http(this.runtime);const before=(await io('/api/rest/credits')).remainingPoints;
   if(!Number.isInteger(before)||before<reserved+emailReserve)throw Error('Balance unreadable/insufficient including protected email reserve');
@@ -43,8 +49,8 @@ export class PaidController{
    NOT EXISTS(SELECT 1 FROM paid_requests WHERE json_extract(body,'$.status')!='completed')
    AND NOT EXISTS(SELECT 1 FROM records WHERE kind='api_calls' AND json_extract(body,'$.status')!='completed')
    AND COALESCE((SELECT SUM(COALESCE(json_extract(body,'$.cost'),json_extract(body,'$.reserved'))) FROM records WHERE kind='api_calls' AND json_extract(body,'$.day')=?),0)
-      +COALESCE((SELECT SUM(COALESCE(json_extract(body,'$.cost'),json_extract(body,'$.reserved'))) FROM paid_requests WHERE json_extract(body,'$.day')=?),0)+?+?<=200
-   ON CONFLICT(id) DO NOTHING`).bind(id,JSON.stringify(record),day(),day(),reserved,emailReserve).run();
+      +COALESCE((SELECT SUM(COALESCE(json_extract(body,'$.cost'),json_extract(body,'$.reserved'))) FROM paid_requests WHERE json_extract(body,'$.day')=?),0)+?+?<=?
+   ON CONFLICT(id) DO NOTHING`).bind(id,JSON.stringify(record),record.day,record.day,reserved,emailReserve,limit).run();
   if(insert.meta.changes!==1)throw Error('Concurrent/ambiguous request or budget conflict; no paid request sent');
   const save=async()=>this.db.prepare('UPDATE paid_requests SET body=? WHERE id=?').bind(JSON.stringify(record),id).run();
   try{
