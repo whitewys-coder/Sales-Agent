@@ -20,7 +20,7 @@ DEFAULT_SCOPE = ('European manufacturing in Germany, France, Spain, Italy, Nethe
 
 
 def digest(d):
-    return hashlib.sha256(json.dumps({k: d[k] for k in ('to', 'subject', 'body')},
+    return hashlib.sha256(json.dumps({k: d.get(k,'') for k in ('to', 'subject', 'body','subject_zh','body_zh')},
                                     sort_keys=True, ensure_ascii=False).encode()).hexdigest()
 
 
@@ -163,13 +163,20 @@ class Engine:
         self.db.event('Sales Agent', 'demo', 'Synthetic draft prepared; sending disabled', run['id'])
         run.update(new_accounts=1, new_drafts=1)
 
-    def edit(self, ident, subject, body):
+    def edit(self, ident, subject, body, subject_zh=None, body_zh=None):
         with self.lock:
             d = self.db.get('drafts', ident)
             if not d or d['status'] not in ('pending', 'approved'):
                 raise ValueError('Draft cannot be edited')
             if not subject.strip() or not body.strip() or '\n' in subject or '\r' in subject:
                 raise ValueError('Invalid subject or body')
+            if d.get('subject_zh') or d.get('body_zh'):
+                if not subject_zh or not body_zh:
+                    raise ValueError('Review and submit both language versions together')
+            if subject_zh is not None or body_zh is not None:
+                if bool(subject_zh)!=bool(body_zh) or '\n' in (subject_zh or '') or '\r' in (subject_zh or ''):
+                    raise ValueError('Invalid Chinese subject/body')
+                d.update(subject_zh=(subject_zh or '')[:300],body_zh=(body_zh or '')[:20000])
             d.update(subject=subject[:300], body=body[:20000], status='pending', approved_hash='')
             return self.db.put('drafts', d)
 

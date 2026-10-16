@@ -13,6 +13,9 @@ def complete(engine, account, person, employment_evidence, retrieved_urls, copy,
     if evidence_reviewed is not True:raise ValueError('Explicit evidence review required')
     subject,body=copy.get('subject','').strip(),copy.get('body','').strip()
     if not subject or not body or '\n' in subject or '\r' in subject:raise ValueError('Subject and body required before any paid lookup')
+    subject_zh,body_zh=copy.get('subject_zh','').strip(),copy.get('body_zh','').strip()
+    if not subject_zh or not body_zh or '\n' in subject_zh or '\r' in subject_zh:
+        raise ValueError('Complete Chinese subject/body required before any paid lookup')
     a=evidence_gate(dict(account),set(retrieved_urls))
     a.update(id=account.get('id') or uid(),updated_at=now(),demo=False)
     if not research_eligible(a):raise ValueError('Company research gate failed')
@@ -28,7 +31,7 @@ def complete(engine, account, person, employment_evidence, retrieved_urls, copy,
              linkedin_url=person['linkedinUrl'],current_verification=v)
     a['research_backend']='native_reviewed'
     a['score_evidence']=account.get('score_evidence',{})
-    a['reviewed_copy']={'subject':subject,'body':body}
+    a['reviewed_copy']={'subject':subject,'body':body,'subject_zh':subject_zh,'body_zh':body_zh}
     a['reviewed_urls']=sorted(set(retrieved_urls))
     engine.db.put('accounts',dict(a,status='needs_contact'))
     # Use the SAME budget ledger and cached paid client as standalone execution.
@@ -47,6 +50,7 @@ def complete(engine, account, person, employment_evidence, retrieved_urls, copy,
     if not a['validated']:return {'status':'needs_contact','account_id':a['id']}
     if any(d.get('account_id')==a['id'] for d in engine.db.all('drafts')):raise ValueError('Draft already exists')
     draft={'id':uid(),'account_id':a['id'],'to':a['email'],'subject':subject,'body':body+'\n\nBest regards,\nAlen Wang\nXeroptix\nAlenWang@xeroptix.com\nhttps://xeroptix.com',
+           'subject_zh':subject_zh,'body_zh':body_zh+'\n\nAlen Wang\nXeroptix\nAlenWang@xeroptix.com\nhttps://xeroptix.com',
            'status':'pending','created_at':now(),'approved_hash':'','demo':False,'research_backend':'native_reviewed'}
     engine.db.put('drafts',draft)
     checkpoint(engine.db, account.get('discovered_company', account['company']),

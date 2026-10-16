@@ -6,6 +6,7 @@ import sqlite3
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
+from .rules import norm, email_eligible
 
 
 def inspect(path, timezone='Asia/Shanghai'):
@@ -20,8 +21,20 @@ def inspect(path, timezone='Asia/Shanghai'):
         queue = next((x for x in settings if x['id'] == 'native_research_queue'), {})
         day = datetime.now(ZoneInfo(timezone)).date().isoformat()
         daily = [x for x in calls if x.get('day') == day]
-        unresolved = [x for x in settings if x['id'].startswith('research_outcome:')
+        accounts, contacts, drafts = rows('accounts'), rows('contacts'), rows('drafts')
+        latest = {}
+        for x in sorted(settings, key=lambda x: x.get('reviewed_at','')):
+            if x['id'].startswith('research_outcome:'):
+                latest[norm(x.get('company'))] = x
+        stopped={'sent','replied','reported_sent','reported_forwarded','rejected','bounced',
+                 '已发送','已回复','用户确认已发送','已拒绝','退信冻结','已退信'}
+        suppressed={norm(x.get('company')) for x in accounts+contacts if x.get('status') in stopped}
+        unresolved = [x for key,x in latest.items() if key not in suppressed
                       and x.get('outcome') in ('needs_contact', 'needs_verification', 'identity_conflict')]
+        pending_drafts=[d for d in drafts if d.get('status') in ('pending','approved') and not d.get('demo')]
+        ready=[d for d in pending_drafts if d.get('subject_zh') and d.get('body_zh') and
+               any(a['id']==d.get('account_id') and a.get('status') not in stopped and email_eligible(a)
+                   for a in accounts)]
         pending = queue.get('value', [])
         interrupted = [r['id'] for r in runs if r['status'] in ('running', 'interrupted')]
         ambiguous = [x['id'] for x in calls if x.get('status') != 'completed']
@@ -30,7 +43,8 @@ def inspect(path, timezone='Asia/Shanghai'):
                                          'reason': x['reason']} for x in unresolved],
                     interrupted_runs=interrupted, ambiguous_paid_requests=ambiguous,
                     recorded_credits=sum(x.get('cost', x['reserved']) for x in daily),
-                    runtime_drafts=len(rows('drafts')), network_calls=0,
+                    runtime_drafts=len(drafts), pending_drafts=len(pending_drafts),
+                    ready_personal_bilingual_drafts=len(ready), network_calls=0,
                     next_action='resume_research' if pending else 'review_unresolved_and_verify_writeback',
                     writeback_status='must_verify_against_current_library_versions',
                     paid_retry_allowed=False)
@@ -65,3 +79,4 @@ if __name__ == '__main__':
     if args.backup:
         backup(args.database, args.backup)
     print(json.dumps(inspect(args.database), ensure_ascii=False))
+

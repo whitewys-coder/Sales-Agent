@@ -30,6 +30,11 @@ class LeadContact:
     def paid(self, kind, payload, reserve):
         day=datetime.now(ZoneInfo(self.c.timezone)).date().isoformat()
         key=hashlib.sha256(json.dumps([day,kind,payload],sort_keys=True).encode()).hexdigest()
+        cached=self.db.get('api_calls',key)
+        if cached and cached.get('status')=='completed':
+            return cached['result']
+        if cached:
+            raise ValueError('Request already attempted/uncertain; reconcile before retry')
         before=self.balance()
         record={'id':key,'day':day,'kind':kind,'payload':payload,'reserved':reserve,'status':'reserved','created_at':now()}
         # A transaction shared by all processes using this DB reserves before the HTTP request.
@@ -41,7 +46,7 @@ class LeadContact:
                 if old['status']=='completed': return old['result']
                 raise ValueError('Request already attempted/uncertain; reconcile before retry')
             daily=[x for x in rows if x['day']==day]
-            if any(x.get('status')!='completed' for x in daily):
+            if any(x.get('status')!='completed' for x in rows):
                 raise ValueError('Unresolved paid request; reconcile before further paid work')
             used=sum(x.get('cost',x['reserved']) for x in daily)
             if used+reserve>self.c.credit_hard_limit or before<reserve: raise ValueError('Daily credit hard limit')
@@ -50,13 +55,15 @@ class LeadContact:
             path={'search':'/api/rest/employess/query/advanced','email':'/api/rest/email/query'}[kind]
             result=self.transport(path,payload)
             # Persist response even if subsequent free balance read fails. Never repeat paid call.
-            record.update(result=result,status='completed',finished_at=now())
+            record.update(result=result,status='response_received',response_received_at=now())
+            self.db.put('api_calls',record)
             try:
                 after=self.balance();delta=before-after
                 record.update(balance_before=before,balance_after=after)
                 if delta>=0: record['cost']=max(delta,reserve) if delta>reserve else delta
                 else: record['billing_status']='unknown; balance increased'
             except Exception:record['billing_status']='unknown; reservation retained'
+            record.update(status='completed',finished_at=now())
             self.db.put('api_calls',record)
             return result
         except Exception:

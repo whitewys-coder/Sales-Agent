@@ -90,10 +90,10 @@ class V33Tests(unittest.TestCase):
   p={'fullName':'Example Person','companyName':'Factory','linkedinUrl':'https://www.linkedin.com/in/example-person'}
   proof=[{'name':'Example Person','company':'Factory','title':'Quality Manager','current':True,'kind':'official_contact','url':u,'checked_date':date.today().isoformat()}]
   with self.assertRaises(ValueError):complete(e,a,p,proof,{u},{'subject':'Task','body':'Question'},False)
-  result=complete(e,a,p,proof,{u},{'subject':'Assembly check','body':'A specific verification question.'},True)
+  result=complete(e,a,p,proof,{u},{'subject':'Assembly check','body':'A specific verification question.','subject_zh':'装配核验','body_zh':'一个具体核验问题。'},True)
   self.assertEqual(result['status'],'pending');self.assertEqual(len(e.db.all('drafts')),1)
   with self.assertRaises(ValueError):e.send(result['draft_id'])
-  with self.assertRaises(ValueError):complete(e,a,p,proof,{u},{'subject':'Duplicate','body':'No'},True)
+  with self.assertRaises(ValueError):complete(e,a,p,proof,{u},{'subject':'Duplicate','body':'No','subject_zh':'重复','body_zh':'不应重复。'},True)
  def test_complete_live_orchestration_with_fake_network(self):
   from sales_agent.agents.validation import evidence_gate
   e=Engine(self.c,provider=object(),leadcontact=object())

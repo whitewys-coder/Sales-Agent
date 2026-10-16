@@ -116,7 +116,8 @@ def serve(config):
                     engine.db.put('settings', {'id': 'scope', 'value': value})
                     return self.respond(200, {'status': 'saved'})
                 if self.path == '/api/drafts/edit':
-                    value = engine.edit(data['id'], str(data['subject']), str(data['body']))
+                    value = engine.edit(data['id'], str(data['subject']), str(data['body']),
+                                        data.get('subject_zh'),data.get('body_zh'))
                 elif self.path == '/api/drafts/approve':
                     value = engine.approve(data['id'], data['hash'], data.get('evidence_reviewed') is True)
                 elif self.path == '/api/drafts/send':
