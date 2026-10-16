@@ -1,0 +1,16 @@
+services:
+  connector:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp
+    restart: unless-stopped
+    env_file: .env.mcp
+    ports:
+      - '127.0.0.1:8081:8081'
+    volumes:
+      - ${SALES_AGENT_STATE_DIR:?Set original restored state directory}:/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
