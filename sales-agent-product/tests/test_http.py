@@ -43,7 +43,7 @@ class HTTPTests(unittest.TestCase):
                 result=call('/api/drafts/approve',{'id':d['id'],'hash':d['hash'],'evidence_reviewed':True})
                 self.assertEqual(result[1]['status'],'approved')
                 with self.assertRaises(urllib.error.HTTPError) as error: call('/api/drafts/send',{'id':d['id']})
-                self.assertEqual(error.exception.code,400)
+                self.assertEqual(error.exception.code,403)
                 self.assertEqual(len(call('/api/export')[1]['accounts']),1)
                 with urllib.request.urlopen(base+'/') as r:
                     self.assertIn('Agate',r.read().decode())

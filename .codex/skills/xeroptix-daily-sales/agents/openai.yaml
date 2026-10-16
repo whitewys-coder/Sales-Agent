@@ -1,0 +1,4 @@
+interface:
+  display_name: "Xeroptix 每日获客"
+  short_description: "按关键词筛公司、核验负责人并生成可供人工发送的个性化开发信"
+  default_prompt: "使用 $xeroptix-daily-sales 执行今日获客作业，遵守每日200积分上限，只生成邮件供人工发送。"

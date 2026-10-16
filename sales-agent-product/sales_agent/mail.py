@@ -54,16 +54,4 @@ class Mailbox:
         return result
 
     def send(self, draft, message_id):
-        if not address(draft['to']) or not address(self.c.sender):
-            raise ValueError('Invalid sender/recipient')
-        if any(c in draft['subject'] for c in '\r\n'):
-            raise ValueError('Header newline rejected')
-        msg = EmailMessage()
-        msg['From'], msg['To'], msg['Subject'] = self.c.sender, draft['to'], draft['subject']
-        msg['Date'], msg['Message-ID'] = formatdate(localtime=False), message_id
-        msg.set_content(draft['body'])
-        with smtplib.SMTP_SSL(self.c.smtp_host, 465, timeout=30, context=ssl.create_default_context()) as smtp:
-            smtp.login(self.c.mail_user, self.c.mail_password)
-            refused = smtp.send_message(msg)
-            if refused:
-                raise RuntimeError('SMTP recipient refused')
+        raise ValueError('V3.3 requires manual sending; SMTP transport disabled')
